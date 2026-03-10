@@ -7,7 +7,7 @@
 #define WIDTH 16
 #define HEIGHT 16
 #define NUM_LEDS 256
-#define DATA_PIN 6
+#define DATA_PIN 7
 
 #define BLOCK_SIZE 4
 #define BLOCK_ROWS 4
@@ -16,13 +16,13 @@
 CRGB leds[NUM_LEDS];
 
 // -------------------- TM1637 (4-pin) score display --------------------
-const uint8_t TM_CLK = 1;
-const uint8_t TM_DIO = 6;
+const uint8_t TM_CLK = A0;
+const uint8_t TM_DIO = A1;
 TM1637Display scoreDisplay(TM_CLK, TM_DIO);
 
 // ---------------- BUTTONS ----------------
 // Blue, Red, Green, Yellow
-const int buttonPins[4] = {A0,A1,A2,A3};
+const int buttonPins[4] = {3,4,5,6};
 
 // ---------------- LCD ----------------
 //LiquidCrystal lcd(7,8,9,10,11,12);
@@ -227,9 +227,18 @@ void moveBlocksDown(){
 
 // ---------------- SPAWN BLOCKS ----------------
 void spawnBlocks(){
+  int count = 0;
 
-  if(beatIndex >= songLength)
-    return;
+  if(beatIndex >= songLength){
+    count++;
+    if(count == 2){
+      return;
+    }
+    else{
+      beatIndex = 0;
+    }
+  }
+    
 
   for(int c = 0; c < BLOCK_COLS; c++){
     blockGrid[0][c] = songMap[beatIndex][c];
@@ -287,7 +296,7 @@ void checkButtons(){
 }
 
 // ---------------- LCD ---------------- OBSOLETE FOR NOW
-void updateLCD(){
+/**void updateLCD(){
   // Row 0: Score
   lcd.setCursor(0, 0);
   lcd.print("Score: ");
@@ -304,4 +313,4 @@ void updateLCD(){
   } else {
     lcd.print("N/A  ");
   }
-}
+}**/
