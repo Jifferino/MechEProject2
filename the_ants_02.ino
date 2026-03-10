@@ -1,5 +1,6 @@
 #include <FastLED.h>
 #include <LiquidCrystal.h>
+#include <TM1637Display.h>
 
 // ---------------- LED MATRIX ----------------
 #define WIDTH 16
@@ -12,6 +13,11 @@
 #define BLOCK_COLS 4
 
 CRGB leds[NUM_LEDS];
+
+// -------------------- TM1637 (4-pin) score display --------------------
+const uint8_t TM_CLK = 3;
+const uint8_t TM_DIO = 2;
+TM1637Display scoreDisplay(TM_CLK, TM_DIO);
 
 // ---------------- BUTTONS ----------------
 // Blue, Red, Green, Yellow
@@ -28,6 +34,13 @@ int correctHits = 0;
 
 unsigned long lastMoveTime = 0;
 int moveDelay = 0;
+
+// Update TM1637 score display
+void showScore() {
+  if (score < 0) score = 0;
+  if (score > 9999) score = 9999;
+  scoreDisplay.showNumberDec(score, true); // leading zeros
+}
 
 // ---------------- XY MAPPING ----------------
 int XY(int x,int y){
@@ -65,6 +78,9 @@ void drawSquare(int startX,int startY,CRGB color){
 
 // ---------------- SETUP ----------------
 void setup(){
+  // TM1637
+  scoreDisplay.setBrightness(7);
+  showScore();
 
   FastLED.addLeds<WS2812B,DATA_PIN,GRB>(leds,NUM_LEDS);
   FastLED.setBrightness(10);
@@ -91,6 +107,7 @@ void loop(){
 
     moveBlocksDown();
     spawnBlocks();
+    showScore();
 
     moveDelay = random(400,600);
 
@@ -99,7 +116,7 @@ void loop(){
   drawBlocks();
   FastLED.show();
 
-  updateLCD();
+  //updateLCD(); --> dont need LCD anymore since using 7 segment 4 digit display for score.
 }
 
 // ---------------- MOVE BLOCKS ----------------
@@ -164,23 +181,24 @@ void checkButtons(){
     if(lastState[c] == HIGH && current == LOW){
 
       if(blockGrid[bottomRow][c] == 1){
-  score += 10;
-  correctHits++;
-  totalBlocks++;           // counts as a block that was handled
-  blockGrid[bottomRow][c] = 0;
-}
+        score += 10;
+        correctHits++;
+        totalBlocks++;           // counts as a block that was handled
+        blockGrid[bottomRow][c] = 0;
+      }
       else{
 
         score -= 10;
 
       }
+      showScore();
     }
 
     lastState[c] = current;
   }
 }
 
-// ---------------- LCD ----------------
+// ---------------- LCD ---------------- OBSOLETE FOR NOW
 void updateLCD(){
   // Row 0: Score
   lcd.setCursor(0, 0);
