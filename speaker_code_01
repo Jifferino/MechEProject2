@@ -1,0 +1,246 @@
+// ============================================================
+//  Arduino Song Player
+//  Song:    Harder, Better, Faster, Stronger - Daft Punk
+//  Key:     F# Minor
+//  BPM:     107
+//  Speaker: Gikfun EK2173 (4 Ohm, 20W) on Pin 8
+//
+//  ⚠️  IMPORTANT HARDWARE NOTE:
+//  This speaker is rated for 20W but Arduino GPIO pins can
+//  only safely supply ~40mA. The speaker WILL work at low
+//  volume, but for proper volume use a PAM8403 or similar
+//  amplifier module between Pin 8 and the speaker.
+//
+//  WIRING (direct, no amp):
+//    Speaker + → Pin 8
+//    Speaker - → GND
+//
+//  WIRING (with PAM8403 amp - recommended):
+//    Arduino Pin 8 → PAM8403 input
+//    PAM8403 output → Speaker
+//    PAM8403 VCC → Arduino 5V
+//    PAM8403 GND → Arduino GND
+// ============================================================
+
+#define SPEAKER_PIN 8
+
+// --- Note Frequency Definitions (Hz) ---
+#define NOTE_CS3 139
+#define NOTE_D3  147
+#define NOTE_E3  165
+#define NOTE_FS3 185
+#define NOTE_GS3 208
+#define NOTE_A3  220
+#define NOTE_B3  247
+#define NOTE_CS4 277
+#define NOTE_D4  294
+#define NOTE_E4  330
+#define NOTE_FS4 370
+#define NOTE_GS4 415
+#define NOTE_A4  440
+#define NOTE_B4  494
+#define NOTE_CS5 554
+#define NOTE_D5  587
+#define NOTE_E5  659
+#define NOTE_FS5 740
+#define NOTE_GS5 831
+#define NOTE_A5  880
+#define REST     0
+
+// ============================================================
+//  Tempo
+// ============================================================
+const int BPM = 107;
+const int WHOLE_NOTE_MS = (60000 / BPM) * 4;
+
+// ============================================================
+//  🎵 Harder, Better, Faster, Stronger — Main Riff + Melody
+//
+//  The song is built on a looping bassline / chord riff in
+//  F# minor. Below is the iconic melodic riff that repeats
+//  throughout the track, transcribed for single-voice buzzer.
+//
+//  Duration guide:
+//    1  = whole, 2 = half, 4 = quarter, 8 = eighth, 16 = sixteenth
+//   -4  = dotted quarter (1.5x), -8 = dotted eighth
+// ============================================================
+
+const int melody[][2] = {
+
+  // --- Intro / Main Riff (x2) ---
+  // "Work it harder, make it better..."
+  { NOTE_FS4,  8 },
+  { NOTE_FS4,  8 },
+  { NOTE_A4,   8 },
+  { NOTE_FS4,  8 },
+  { NOTE_E4,   4 },
+  { REST,       8 },
+  { NOTE_D4,   8 },
+  { NOTE_CS4,  4 },
+  { REST,       8 },
+
+  { NOTE_FS4,  8 },
+  { NOTE_FS4,  8 },
+  { NOTE_A4,   8 },
+  { NOTE_FS4,  8 },
+  { NOTE_B4,   4 },
+  { REST,       8 },
+  { NOTE_A4,   8 },
+  { NOTE_GS4,  4 },
+  { REST,       8 },
+
+  { NOTE_FS4,  8 },
+  { NOTE_FS4,  8 },
+  { NOTE_A4,   8 },
+  { NOTE_FS4,  8 },
+  { NOTE_E4,   4 },
+  { REST,       8 },
+  { NOTE_D4,   8 },
+  { NOTE_CS4,  4 },
+  { REST,       8 },
+
+  { NOTE_FS4,  8 },
+  { NOTE_FS4,  8 },
+  { NOTE_A4,   8 },
+  { NOTE_FS4,  8 },
+  { NOTE_CS5,  4 },
+  { REST,       8 },
+  { NOTE_B4,   8 },
+  { NOTE_A4,  -4 },
+  { REST,       8 },
+
+  // --- Verse melodic hook ---
+  { NOTE_B4,   8 },
+  { NOTE_CS5,  8 },
+  { NOTE_D5,   4 },
+  { NOTE_CS5,  8 },
+  { NOTE_B4,   8 },
+  { NOTE_A4,   4 },
+  { REST,       4 },
+
+  { NOTE_FS4,  8 },
+  { NOTE_GS4,  8 },
+  { NOTE_A4,   4 },
+  { NOTE_GS4,  8 },
+  { NOTE_FS4,  8 },
+  { NOTE_E4,  -4 },
+  { REST,       8 },
+
+  { NOTE_B4,   8 },
+  { NOTE_CS5,  8 },
+  { NOTE_D5,   4 },
+  { NOTE_E5,   8 },
+  { NOTE_D5,   8 },
+  { NOTE_CS5,  4 },
+  { REST,       4 },
+
+  { NOTE_FS4,  8 },
+  { NOTE_A4,   8 },
+  { NOTE_CS5,  4 },
+  { NOTE_B4,   8 },
+  { NOTE_A4,   8 },
+  { NOTE_FS4,  2 },
+  { REST,       4 },
+
+  // --- Chorus / Build ---
+  { NOTE_FS5,  8 },
+  { NOTE_E5,   8 },
+  { NOTE_D5,   4 },
+  { NOTE_CS5,  8 },
+  { NOTE_B4,   8 },
+  { NOTE_A4,   4 },
+  { REST,       4 },
+
+  { NOTE_GS4,  8 },
+  { NOTE_A4,   8 },
+  { NOTE_B4,   4 },
+  { NOTE_A4,   8 },
+  { NOTE_GS4,  8 },
+  { NOTE_FS4, -4 },
+  { REST,       8 },
+
+  { NOTE_FS5,  8 },
+  { NOTE_E5,   8 },
+  { NOTE_D5,   4 },
+  { NOTE_CS5,  8 },
+  { NOTE_B4,   8 },
+  { NOTE_CS5,  4 },
+  { NOTE_D5,   4 },
+
+  { NOTE_E5,   8 },
+  { NOTE_FS5,  8 },
+  { NOTE_GS5,  4 },
+  { NOTE_FS5,  8 },
+  { NOTE_E5,   8 },
+  { NOTE_D5,   2 },
+  { REST,       4 },
+
+  // --- Repeat main riff ---
+  { NOTE_FS4,  8 },
+  { NOTE_FS4,  8 },
+  { NOTE_A4,   8 },
+  { NOTE_FS4,  8 },
+  { NOTE_E4,   4 },
+  { REST,       8 },
+  { NOTE_D4,   8 },
+  { NOTE_CS4,  4 },
+  { REST,       8 },
+
+  { NOTE_FS4,  8 },
+  { NOTE_FS4,  8 },
+  { NOTE_A4,   8 },
+  { NOTE_FS4,  8 },
+  { NOTE_B4,   4 },
+  { REST,       8 },
+  { NOTE_A4,   8 },
+  { NOTE_GS4,  4 },
+  { REST,       8 },
+
+  { NOTE_FS4,  8 },
+  { NOTE_FS4,  8 },
+  { NOTE_A4,   8 },
+  { NOTE_FS4,  8 },
+  { NOTE_CS5,  4 },
+  { REST,       8 },
+  { NOTE_B4,   8 },
+  { NOTE_A4,  -2 },
+
+};
+
+const int NOTE_COUNT = sizeof(melody) / sizeof(melody[0]);
+
+// ============================================================
+//  Playback engine
+// ============================================================
+void playSong() {
+  for (int i = 0; i < NOTE_COUNT; i++) {
+    int note    = melody[i][0];
+    int divider = melody[i][1];
+
+    int noteDuration;
+    if (divider > 0) {
+      noteDuration = WHOLE_NOTE_MS / divider;
+    } else {
+      noteDuration = (WHOLE_NOTE_MS / abs(divider)) * 1.5;
+    }
+
+    if (note == REST) {
+      noTone(SPEAKER_PIN);
+    } else {
+      tone(SPEAKER_PIN, note, noteDuration * 0.9);
+    }
+
+    delay(noteDuration);
+    noTone(SPEAKER_PIN);
+  }
+}
+
+void setup() {
+  pinMode(SPEAKER_PIN, OUTPUT);
+  playSong();
+}
+
+void loop() {
+  // Song plays once on startup.
+  // Move playSong() here to loop continuously.
+}
