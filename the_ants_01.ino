@@ -90,7 +90,7 @@ void loop(){
     moveBlocksDown();
     spawnBlocks();
 
-    moveDelay = random(700,1000);
+    moveDelay = random(400,600);
 
   }
 
