@@ -2,6 +2,7 @@
 #include <LiquidCrystal.h>
 #include <TM1637Display.h>
 
+//SONG CHOSEN: DAFT PUNK HARDER BETTER FASTER STRONGER
 // ---------------- LED MATRIX ----------------
 #define WIDTH 16
 #define HEIGHT 16
@@ -15,13 +16,13 @@
 CRGB leds[NUM_LEDS];
 
 // -------------------- TM1637 (4-pin) score display --------------------
-const uint8_t TM_CLK = 3;
-const uint8_t TM_DIO = 2;
+const uint8_t TM_CLK = 1;
+const uint8_t TM_DIO = 6;
 TM1637Display scoreDisplay(TM_CLK, TM_DIO);
 
 // ---------------- BUTTONS ----------------
 // Blue, Red, Green, Yellow
-const int buttonPins[4] = {5,4,3,2};
+const int buttonPins[4] = {A0,A1,A2,A3};
 
 // ---------------- LCD ----------------
 LiquidCrystal lcd(7,8,9,10,11,12);
@@ -33,8 +34,8 @@ int totalBlocks = 0;
 int correctHits = 0;
 
 unsigned long lastMoveTime = 0;
-int moveDelay = 0;
-
+int moveDelay = 488; //Defined by finding beatInterval (60000 / bpm of song (123)) --> 488ms.
+                     //SONG CHOSEN: DAFT PUNK HARDER BETTER FASTER STRONGER
 // Update TM1637 score display
 void showScore() {
   if (score < 0) score = 0;
@@ -76,6 +77,98 @@ void drawSquare(int startX,int startY,CRGB color){
   }
 }
 
+// ---------------- SONG CHART ----------------
+// Lanes: 0=Blue, 1=Red, 2=Green, 3=Yellow
+
+const int songLength = 64;
+
+const byte songMap[songLength][4] = {
+
+  // Intro groove
+  {1,0,0,0},
+  {0,1,0,0},
+  {0,0,1,0},
+  {0,0,0,1},
+
+  {1,0,1,0},
+  {0,1,0,1},
+  {1,0,0,0},
+  {0,0,1,0},
+
+  // melody entrance
+  {0,1,0,0},
+  {0,0,1,0},
+  {0,0,0,1},
+  {1,0,0,0},
+
+  {0,1,1,0},
+  {0,0,1,1},
+  {1,0,1,0},
+  {0,1,0,1},
+
+  // verse groove
+  {1,0,0,0},
+  {0,1,0,0},
+  {0,0,1,0},
+  {0,0,0,1},
+
+  {1,1,0,0},
+  {0,1,1,0},
+  {0,0,1,1},
+  {1,0,0,1},
+
+  // buildup
+  {1,0,1,0},
+  {0,1,0,1},
+  {1,1,0,0},
+  {0,0,1,1},
+
+  {1,0,0,0},
+  {0,1,0,0},
+  {0,0,1,0},
+  {0,0,0,1},
+
+  // chorus rhythm
+  {1,1,0,0},
+  {0,1,1,0},
+  {0,0,1,1},
+  {1,0,0,1},
+
+  {1,0,1,0},
+  {0,1,0,1},
+  {1,1,1,0},
+  {0,1,1,1},
+
+  // repeat groove
+  {1,0,0,0},
+  {0,1,0,0},
+  {0,0,1,0},
+  {0,0,0,1},
+
+  {1,0,1,0},
+  {0,1,0,1},
+  {1,1,0,0},
+  {0,0,1,1},
+
+  // ending
+  {1,1,1,0},
+  {0,1,1,1},
+  {1,0,1,1},
+  {1,1,0,1},
+
+  {1,1,1,1},
+  {0,1,1,1},
+  {1,0,1,1},
+  {1,1,0,1},
+
+  {1,0,0,0},
+  {0,1,0,0},
+  {0,0,1,0},
+  {0,0,0,1}
+};
+
+int beatIndex = 0;
+
 // ---------------- SETUP ----------------
 void setup(){
   // TM1637
@@ -86,8 +179,6 @@ void setup(){
   FastLED.setBrightness(10);
 
   randomSeed(analogRead(0));
-
-  moveDelay = random(100,200);
 
   for(int i=0;i<4;i++)
     pinMode(buttonPins[i],INPUT_PULLUP);
@@ -108,9 +199,6 @@ void loop(){
     moveBlocksDown();
     spawnBlocks();
     showScore();
-
-    moveDelay = random(400,600);
-
   }
 
   drawBlocks();
@@ -140,14 +228,14 @@ void moveBlocksDown(){
 // ---------------- SPAWN BLOCKS ----------------
 void spawnBlocks(){
 
-  int c1 = random(BLOCK_COLS);
-  int c2 = random(BLOCK_COLS);
+  if(beatIndex >= songLength)
+    return;
 
-  while(c2 == c1)
-    c2 = random(BLOCK_COLS);
+  for(int c = 0; c < BLOCK_COLS; c++){
+    blockGrid[0][c] = songMap[beatIndex][c];
+  }
 
-  blockGrid[0][c1] = 1;
-  blockGrid[0][c2] = 1;
+  beatIndex++;
 }
 
 // ---------------- DRAW BLOCKS ----------------
