@@ -92,8 +92,8 @@ void setup(){
   for(int i=0;i<4;i++)
     pinMode(buttonPins[i],INPUT_PULLUP);
 
-  lcd.begin(16,2);
-  lcd.print("Score: 0");
+  //lcd.begin(16,2);
+  //lcd.print("Score: 0");
 }
 
 // ---------------- LOOP ----------------
