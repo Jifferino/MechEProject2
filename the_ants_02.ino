@@ -25,7 +25,7 @@ TM1637Display scoreDisplay(TM_CLK, TM_DIO);
 const int buttonPins[4] = {A0,A1,A2,A3};
 
 // ---------------- LCD ----------------
-LiquidCrystal lcd(7,8,9,10,11,12);
+//LiquidCrystal lcd(7,8,9,10,11,12);
 
 // ---------------- GAME ----------------
 int blockGrid[BLOCK_ROWS][BLOCK_COLS];
