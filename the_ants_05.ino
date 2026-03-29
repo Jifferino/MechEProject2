@@ -38,7 +38,7 @@ int score = 0;
 int streakCount = 0;
 
 unsigned long lastMoveTime = 0;
-int moveDelay = 10;
+int moveDelay = 150;
 
 bool gameStarted = false;
 
