@@ -392,12 +392,12 @@ void checkButtons(){
         registerCorrectHit();
         servoAngle += 20;
         servoAngle = constrain(servoAngle, 0, 180);
-        delay(10);
+        millis(10);
         myServo.write(servoAngle);
         servoAngle -= 40;
         servoAngle = constrain(servoAngle, 0, 180);
         myServo.write(servoAngle);
-        delay(10);
+        millis(10);
         servoAngle += 20;
         servoAngle = constrain(servoAngle, 0, 180);
         myServo.write(servoAngle);
