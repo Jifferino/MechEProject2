@@ -2,7 +2,6 @@
 #include <TM1637Display.h>
 #include <CapacitiveSensor.h>
 #include <Servo.h>
-#include <Servo.h>
 
 // ---------------- LED MATRIX ----------------
 #define WIDTH 16
