@@ -81,7 +81,12 @@ void setup(){
 // ---------------- LOOP ----------------
 void loop(){
 
-  checkStartButton();
+  if(checkStartButton()){
+    drawBlocks();
+    FastLED.show();
+    return;
+  }
+
   checkPowerUpButton();
   updatePowerUpState();
 
@@ -106,16 +111,18 @@ void loop(){
 }
 
 // ---------------- START BUTTON ----------------
-void checkStartButton(){
+bool checkStartButton(){
 
   static bool lastState = HIGH;
   bool current = digitalRead(startButtonPin);
+  bool wasPressed = (lastState == HIGH && current == LOW);
 
-  if(lastState == HIGH && current == LOW){
+  if(wasPressed){
     startGame();
   }
 
   lastState = current;
+  return wasPressed;
 }
 
 void checkPowerUpButton(){
@@ -221,6 +228,13 @@ const byte songMap[songLength][4] = {
 
 int beatIndex = 0;
 
+void clearBoard(){
+  for(int r=0; r<BLOCK_ROWS; r++){
+    for(int c=0; c<BLOCK_COLS; c++){
+      blockGrid[r][c] = 0;
+    }
+  }
+}
 
 // ---------------- START GAME ----------------
 void startGame(){
@@ -233,14 +247,10 @@ void startGame(){
   powerUpStartTime = 0;
   beatIndex = 0;
   lastMoveTime = millis();
-  pinMode(SPEAKER_PIN, OUTPUT);
-  playSong();
+  servoAngle = 90;
+  myServo.write(servoAngle);
 
-  for(int r=0;r<BLOCK_ROWS;r++){
-    for(int c=0;c<BLOCK_COLS;c++){
-      blockGrid[r][c] = 0;
-    }
-  }
+  clearBoard();
 
   showScore();
 }
