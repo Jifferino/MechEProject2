@@ -303,22 +303,14 @@ void moveBlocksDown(){
 
   for(int c = 0; c < BLOCK_COLS; c++)
     blockGrid[0][c] = 0;
+
 }
 
-// ---------------- SPAWN (ALWAYS 2 BLOCKS) ----------------
+// ---------------- SPAWN ----------------
 void spawnBlocks(){
-  int count = 0;
-
   if(beatIndex >= songLength){
-    count++;
-    if(count == 2){
-      return;
-    }
-    else{
-      beatIndex = 0;
-    }
+    beatIndex = 0;
   }
-    
 
   for(int c = 0; c < BLOCK_COLS; c++){
     blockGrid[0][c] = songMap[beatIndex][c];
@@ -379,10 +371,10 @@ CRGB getColor(int col){
 // ---------------- Sensors ----------------
 void checkButtons(){
   int bottomRow = BLOCK_ROWS - 1;
+  static bool wasTouched[4] = {false, false, false, false};
 
-  for(int c = 0; c < 4; c++){
+  for(int c = 0; c < BLOCK_COLS; c++){
     long reading = touchSensors[c].capacitiveSensor(10);
-    static bool wasTouched[4] = {false, false, false, false};
     bool isTouched = reading > TOUCH_THRESHOLD;
 
     if(isTouched && !wasTouched[c]){
