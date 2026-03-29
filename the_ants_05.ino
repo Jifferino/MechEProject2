@@ -1,5 +1,6 @@
 #include <FastLED.h>
 #include <TM1637Display.h>
+#include <CapacitiveSensor.h>
 
 // ---------------- LED MATRIX ----------------
 #define WIDTH 16
@@ -19,7 +20,14 @@ const uint8_t TM_DIO = A1;
 TM1637Display scoreDisplay(TM_CLK, TM_DIO);
 
 // ---------------- BUTTONS ----------------
-const int buttonPins[4] = {5,4,3,6};
+//const int buttonPins[4] = {5,4,3,6};
+CapacitiveSensor touchSensors[4] = {
+  CapacitiveSensor(10, 5),
+  CapacitiveSensor(10, 4),
+  CapacitiveSensor(10, 3),
+  CapacitiveSensor(10, 6)
+};
+const long TOUCH_THRESHOLD = 100; //sensitivity
 const int startButtonPin = 2;
 
 // ---------------- GAME ----------------
@@ -594,9 +602,6 @@ void setup(){
   scoreDisplay.setBrightness(7);
   showScore();
 
-  for(int i=0;i<4;i++)
-    pinMode(buttonPins[i],INPUT_PULLUP);
-
   pinMode(startButtonPin, INPUT_PULLUP);
 
   randomSeed(analogRead(0)); // important for randomness
@@ -735,40 +740,36 @@ CRGB getColor(int col){
   return CRGB::Black;
 }
 
-// ---------------- BUTTONS ----------------
+// ---------------- Sensors ----------------
 void checkButtons(){
-
-  static bool lastState[4] = {HIGH,HIGH,HIGH,HIGH};
   int bottomRow = BLOCK_ROWS - 1;
 
-  for(int c=0;c<4;c++){
+  for(int c = 0; c < 4; c++){
+    long reading = touchSensors[c].capacitiveSensor(30);
+    static bool wasTouched[4] = {false, false, false, false};
+    bool isTouched = reading > TOUCH_THRESHOLD;
 
-    bool current = digitalRead(buttonPins[c]);
-
-    if(lastState[c] == HIGH && current == LOW){
-
+    if(isTouched && !wasTouched[c]){
       if(blockGrid[bottomRow][c] == 1){
         score += 10;
         blockGrid[bottomRow][c] = 0;
-        servoAngle += 20;              // turn 20 degrees
+        servoAngle += 20;
         servoAngle = constrain(servoAngle, 0, 180);
         myServo.write(servoAngle);
-        servoAngle += -40;              // turn 20 degrees
+        servoAngle -= 40;
         servoAngle = constrain(servoAngle, 0, 180);
         myServo.write(servoAngle);
-        servoAngle += 20;              // turn 20 degrees
+        servoAngle += 20;
         servoAngle = constrain(servoAngle, 0, 180);
         myServo.write(servoAngle);
-      }
-      else{
+      } else {
         score -= 10;
         if(score < 0) score = 0;
       }
-
       showScore();
     }
 
-    lastState[c] = current;
+    wasTouched[c] = isTouched;
   }
 }
 
