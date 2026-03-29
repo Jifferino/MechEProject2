@@ -38,7 +38,7 @@ int score = 0;
 int streakCount = 0;
 
 unsigned long lastMoveTime = 0;
-int moveDelay = 150;
+int moveDelay = 50;
 
 bool gameStarted = false;
 
@@ -374,7 +374,7 @@ void checkButtons(){
   static bool wasTouched[4] = {false, false, false, false};
 
   for(int c = 0; c < BLOCK_COLS; c++){
-    long reading = touchSensors[c].capacitiveSensor(10);
+    long reading = touchSensors[c].capacitiveSensor(3);
     bool isTouched = reading > TOUCH_THRESHOLD;
 
     if(isTouched && !wasTouched[c]){
@@ -384,12 +384,10 @@ void checkButtons(){
         registerCorrectHit();
         servoAngle += 20;
         servoAngle = constrain(servoAngle, 0, 180);
-        millis(10);
         myServo.write(servoAngle);
         servoAngle -= 40;
         servoAngle = constrain(servoAngle, 0, 180);
         myServo.write(servoAngle);
-        millis(10);
         servoAngle += 20;
         servoAngle = constrain(servoAngle, 0, 180);
         myServo.write(servoAngle);
