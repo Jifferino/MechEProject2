@@ -1,6 +1,7 @@
 #include <FastLED.h>
 #include <TM1637Display.h>
 #include <CapacitiveSensor.h>
+#include <Servo.h>
 
 // ---------------- LED MATRIX ----------------
 #define WIDTH 16
@@ -22,9 +23,9 @@ TM1637Display scoreDisplay(TM_CLK, TM_DIO);
 // ---------------- BUTTONS ----------------
 //const int buttonPins[4] = {5,4,3,6};
 CapacitiveSensor touchSensors[4] = {
-  CapacitiveSensor(10, 5),
-  CapacitiveSensor(10, 4),
   CapacitiveSensor(10, 3),
+  CapacitiveSensor(10, 4),
+  CapacitiveSensor(10, 5),
   CapacitiveSensor(10, 6)
 };
 const long TOUCH_THRESHOLD = 100; //sensitivity
@@ -39,10 +40,7 @@ int moveDelay = 350;
 
 bool gameStarted = false;
 
-// ------------ GRASSHOPPER SERVO --------------
-const int SERVO_PIN = 9 
-#include <Servo.h>
-
+// ------------ GRASSHOPPER SERVO -------------- 
 Servo myServo;
 const int SERVO_PIN = 9;
 
