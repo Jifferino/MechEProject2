@@ -1,6 +1,7 @@
 #include <FastLED.h>
 #include <TM1637Display.h>
 #include <CapacitiveSensor.h>
+#include <Servo.h>
 
 // ---------------- LED MATRIX ----------------
 #define WIDTH 16
@@ -29,20 +30,29 @@ CapacitiveSensor touchSensors[4] = {
 };
 const long TOUCH_THRESHOLD = 100; //sensitivity
 const int startButtonPin = 2;
+const int powerUpButtonPin = A3;
 
 // ---------------- GAME ----------------
 int blockGrid[BLOCK_ROWS][BLOCK_COLS];
 int score = 0;
+int streakCount = 0;
 
 unsigned long lastMoveTime = 0;
 int moveDelay = 350;
 
 bool gameStarted = false;
 
-// ------------ GRASSHOPPER SERVO --------------
-const int SERVO_PIN = 9 
-#include <Servo.h>
+const int POINTS_PER_HIT = 10;
+const int POWER_UP_STREAK_TARGET = 8;
+const int POWER_UP_MULTIPLIER = 2;
+const unsigned long POWER_UP_DURATION_MS = 15000UL;
 
+bool powerUpReady = false;
+bool powerUpActive = false;
+unsigned long powerUpStartTime = 0;
+const CRGB POWER_UP_READY_COLOR = CRGB(255, 190, 0);
+
+// ------------ GRASSHOPPER SERVO --------------
 Servo myServo;
 const int SERVO_PIN = 9;
 
@@ -603,6 +613,7 @@ void setup(){
   showScore();
 
   pinMode(startButtonPin, INPUT_PULLUP);
+  pinMode(powerUpButtonPin, INPUT_PULLUP);
 
   randomSeed(analogRead(0)); // important for randomness
 }
@@ -611,6 +622,8 @@ void setup(){
 void loop(){
 
   checkStartButton();
+  checkPowerUpButton();
+  updatePowerUpState();
 
   if(!gameStarted){
     drawStartScreen();
@@ -640,6 +653,17 @@ void checkStartButton(){
 
   if(lastState == HIGH && current == LOW){
     startGame();
+  }
+
+  lastState = current;
+}
+
+void checkPowerUpButton(){
+  static bool lastState = HIGH;
+  bool current = digitalRead(powerUpButtonPin);
+
+  if(lastState == HIGH && current == LOW && powerUpReady && !powerUpActive){
+    activatePowerUp();
   }
 
   lastState = current;
@@ -743,6 +767,12 @@ void startGame(){
 
   gameStarted = true;
   score = 0;
+  streakCount = 0;
+  powerUpReady = false;
+  powerUpActive = false;
+  powerUpStartTime = 0;
+  beatIndex = 0;
+  lastMoveTime = millis();
   pinMode(SPEAKER_PIN, OUTPUT);
   playSong();
 
@@ -754,9 +784,46 @@ void startGame(){
 
   showScore();
 }
+//---------------- POWER UP ----------------
+
+void updatePowerUpState(){
+  if(powerUpActive && millis() - powerUpStartTime >= POWER_UP_DURATION_MS){
+    powerUpActive = false;
+  }
+}
+void activatePowerUp(){
+  powerUpReady = false;
+  powerUpActive = true;
+  powerUpStartTime = millis();
+}
+void registerCorrectHit(){
+  if(powerUpReady || powerUpActive){
+    return;
+  }
+  streakCount++;
+  if(streakCount >= POWER_UP_STREAK_TARGET){
+    streakCount = 0;
+    powerUpReady = true;
+  }
+}
+void resetStreak(){
+  streakCount = 0;
+}
+int pointsForHit(){
+  return POINTS_PER_HIT * (powerUpActive ? POWER_UP_MULTIPLIER : 1);
+}
 
 // ---------------- MOVE BLOCKS ----------------
 void moveBlocksDown(){
+
+  int bottomRow = BLOCK_ROWS - 1;
+
+  for(int c = 0; c < BLOCK_COLS; c++){
+    if(blockGrid[bottomRow][c] == 1){
+      resetStreak();
+      break;
+    }
+  }
 
   for(int r = BLOCK_ROWS - 1; r > 0; r--){
     for(int c = 0; c < BLOCK_COLS; c++){
@@ -829,6 +896,8 @@ int XY(int x,int y){
 // ---------------- COLORS ----------------
 CRGB getColor(int col){
 
+  if(powerUpReady && !powerUpActive) return POWER_UP_READY_COLOR;
+
   if(col == 0) return CRGB::Blue;
   if(col == 1) return CRGB::Red;
   if(col == 2) return CRGB::Green;
@@ -848,8 +917,9 @@ void checkButtons(){
 
     if(isTouched && !wasTouched[c]){
       if(blockGrid[bottomRow][c] == 1){
-        score += 10;
+        score += pointsForHit();
         blockGrid[bottomRow][c] = 0;
+        registerCorrectHit();
         servoAngle += 20;
         servoAngle = constrain(servoAngle, 0, 180);
         myServo.write(servoAngle);
@@ -860,8 +930,9 @@ void checkButtons(){
         servoAngle = constrain(servoAngle, 0, 180);
         myServo.write(servoAngle);
       } else {
-        score -= 10;
+        score -= POINTS_PER_HIT;
         if(score < 0) score = 0;
+        resetStreak();
       }
       showScore();
     }
