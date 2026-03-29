@@ -645,6 +645,99 @@ void checkStartButton(){
   lastState = current;
 }
 
+// ---------------- SONG CHART ----------------
+// Lanes: 0=Blue, 1=Red, 2=Green, 3=Yellow
+
+const int songLength = 64;
+
+const byte songMap[songLength][4] = {
+
+  // Intro groove
+  {1,0,0,0},
+  {0,1,0,0},
+  {0,0,1,0},
+  {0,0,0,1},
+
+  {1,0,1,0},
+  {0,1,0,1},
+  {1,0,0,0},
+  {0,0,1,0},
+
+  // melody entrance
+  {0,1,0,0},
+  {0,0,1,0},
+  {0,0,0,1},
+  {1,0,0,0},
+
+  {0,1,1,0},
+  {0,0,1,1},
+  {1,0,1,0},
+  {0,1,0,1},
+
+  // verse groove
+  {1,0,0,0},
+  {0,1,0,0},
+  {0,0,1,0},
+  {0,0,0,1},
+
+  {1,1,0,0},
+  {0,1,1,0},
+  {0,0,1,1},
+  {1,0,0,1},
+
+  // buildup
+  {1,0,1,0},
+  {0,1,0,1},
+  {1,1,0,0},
+  {0,0,1,1},
+
+  {1,0,0,0},
+  {0,1,0,0},
+  {0,0,1,0},
+  {0,0,0,1},
+
+  // chorus rhythm
+  {1,1,0,0},
+  {0,1,1,0},
+  {0,0,1,1},
+  {1,0,0,1},
+
+  {1,0,1,0},
+  {0,1,0,1},
+  {1,1,1,0},
+  {0,1,1,1},
+
+  // repeat groove
+  {1,0,0,0},
+  {0,1,0,0},
+  {0,0,1,0},
+  {0,0,0,1},
+
+  {1,0,1,0},
+  {0,1,0,1},
+  {1,1,0,0},
+  {0,0,1,1},
+
+  // ending
+  {1,1,1,0},
+  {0,1,1,1},
+  {1,0,1,1},
+  {1,1,0,1},
+
+  {1,1,1,1},
+  {0,1,1,1},
+  {1,0,1,1},
+  {1,1,0,1},
+
+  {1,0,0,0},
+  {0,1,0,0},
+  {0,0,1,0},
+  {0,0,0,1}
+};
+
+int beatIndex = 0;
+
+
 // ---------------- START GAME ----------------
 void startGame(){
 
@@ -677,20 +770,24 @@ void moveBlocksDown(){
 
 // ---------------- SPAWN (ALWAYS 2 BLOCKS) ----------------
 void spawnBlocks(){
+  int count = 0;
 
-  // clear row
-  for(int c=0;c<BLOCK_COLS;c++){
-    blockGrid[0][c] = 0;
+  if(beatIndex >= songLength){
+    count++;
+    if(count == 2){
+      return;
+    }
+    else{
+      beatIndex = 0;
+    }
+  }
+    
+
+  for(int c = 0; c < BLOCK_COLS; c++){
+    blockGrid[0][c] = songMap[beatIndex][c];
   }
 
-  int c1 = random(4);
-  int c2 = random(4);
-
-  while(c2 == c1)
-    c2 = random(4);
-
-  blockGrid[0][c1] = 1;
-  blockGrid[0][c2] = 1;
+  beatIndex++;
 }
 
 // ---------------- DRAW ----------------
