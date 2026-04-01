@@ -2,6 +2,7 @@
 #include <LiquidCrystal.h>
 #include <TM1637Display.h>
 #include <Wire.h>
+#include <Servo.h>
 
 //SONG CHOSEN: DAFT PUNK HARDER BETTER FASTER STRONGER
 // ---------------- LED MATRIX ----------------
