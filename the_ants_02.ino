@@ -1,6 +1,7 @@
 #include <FastLED.h>
 #include <LiquidCrystal.h>
 #include <TM1637Display.h>
+#include <Wire.h>
 
 //SONG CHOSEN: DAFT PUNK HARDER BETTER FASTER STRONGER
 // ---------------- LED MATRIX ----------------
@@ -14,6 +15,8 @@
 #define BLOCK_COLS 4
 
 CRGB leds[NUM_LEDS];
+
+const byte AUDIO_ADDR = 0x08;
 
 // -------------------- TM1637 (4-pin) score display --------------------
 const uint8_t TM_CLK = A0;
@@ -216,6 +219,7 @@ void checkPowerUpButton(){
 
 // ---------------- SETUP ----------------
 void setup(){
+  Wire.begin();
   // TM1637
   scoreDisplay.setBrightness(7);
   showScore();
@@ -242,6 +246,11 @@ void setup(){
 void loop(){
 
   if(checkStartButton()){
+    Wire.beginTransmission(AUDIO_ADDR);
+    Wire.write('R');
+    Wire.endTransmission();
+    delay(20);
+    
     drawBlocks();
     FastLED.show();
     return;
