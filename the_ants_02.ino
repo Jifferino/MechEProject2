@@ -23,6 +23,8 @@ TM1637Display scoreDisplay(TM_CLK, TM_DIO);
 // ---------------- BUTTONS ----------------
 // Blue, Red, Green, Yellow
 const int buttonPins[4] = {3,4,5,6};
+const int startButtonPin = 2;
+const int powerUpButtonPin = A3;
 
 // ---------------- LCD ----------------
 //LiquidCrystal lcd(7,8,9,10,11,12);
@@ -30,18 +32,34 @@ const int buttonPins[4] = {3,4,5,6};
 // ---------------- GAME ----------------
 int blockGrid[BLOCK_ROWS][BLOCK_COLS];
 int score = 0;
-int totalBlocks = 0;
-int correctHits = 0;
+int streakCount = 0;
 
 unsigned long lastMoveTime = 0;
-int moveDelay = 488; //Defined by finding beatInterval (60000 / bpm of song (123)) --> 488ms.
-                     //SONG CHOSEN: DAFT PUNK HARDER BETTER FASTER STRONGER
-// Update TM1637 score display
+int moveDelay = 488;
+
+bool gameStarted = false;
+
+const int POINTS_PER_HIT = 10;
+const int POWER_UP_STREAK_TARGET = 8;
+const int POWER_UP_MULTIPLIER = 2;
+const unsigned long POWER_UP_DURATION_MS = 15000UL;
+
+bool powerUpReady = false;
+bool powerUpActive = false;
+unsigned long powerUpStartTime = 0;
+const CRGB POWER_UP_READY_COLOR = CRGB(255, 190, 0);
+
 void showScore() {
   if (score < 0) score = 0;
   if (score > 9999) score = 9999;
   scoreDisplay.showNumberDec(score, true); // leading zeros
 }
+
+// ------------ GRASSHOPPER SERVO --------------
+Servo myServo;
+const int SERVO_PIN = 9;
+
+int servoAngle = 90;   // starting position
 
 // ---------------- XY MAPPING ----------------
 int XY(int x,int y){
@@ -169,6 +187,33 @@ const byte songMap[songLength][4] = {
 
 int beatIndex = 0;
 
+// POWERUP AND START BUTTONS
+
+bool checkStartButton(){
+
+  static bool lastState = HIGH;
+  bool current = digitalRead(startButtonPin);
+  bool wasPressed = (lastState == HIGH && current == LOW);
+
+  if(wasPressed){
+    startGame();
+  }
+
+  lastState = current;
+  return wasPressed;
+}
+
+void checkPowerUpButton(){
+  static bool lastState = HIGH;
+  bool current = digitalRead(powerUpButtonPin);
+
+  if(lastState == HIGH && current == LOW && powerUpReady && !powerUpActive){
+    activatePowerUp();
+  }
+
+  lastState = current;
+}
+
 // ---------------- SETUP ----------------
 void setup(){
   // TM1637
@@ -183,12 +228,32 @@ void setup(){
   for(int i=0;i<4;i++)
     pinMode(buttonPins[i],INPUT_PULLUP);
 
+  myServo.attach(SERVO_PIN);
+  myServo.write(servoAngle);
+
+  pinMode(startButtonPin, INPUT_PULLUP);
+  pinMode(powerUpButtonPin, INPUT_PULLUP);
+
   //lcd.begin(16,2);
   //lcd.print("Score: 0");
 }
 
 // ---------------- LOOP ----------------
 void loop(){
+
+  if(checkStartButton()){
+    drawBlocks();
+    FastLED.show();
+    return;
+  }
+
+  checkPowerUpButton();
+  updatePowerUpState();
+
+  if(!gameStarted){
+    drawStartScreen();
+    return;
+  }
 
   checkButtons();
 
@@ -203,8 +268,53 @@ void loop(){
 
   drawBlocks();
   FastLED.show();
+  //updateLCD(); --> Not used anymore
+}
+// ---------------- START GAME ----------------
+void startGame(){
 
-  //updateLCD(); --> dont need LCD anymore since using 7 segment 4 digit display for score.
+  gameStarted = true;
+  score = 0;
+  streakCount = 0;
+  powerUpReady = false;
+  powerUpActive = false;
+  powerUpStartTime = 0;
+  beatIndex = 0;
+  lastMoveTime = millis();
+  servoAngle = 90;
+  myServo.write(servoAngle);
+
+  clearBoard();
+
+  showScore();
+}
+//---------------- POWER UP ----------------
+
+void updatePowerUpState(){
+  if(powerUpActive && millis() - powerUpStartTime >= POWER_UP_DURATION_MS){
+    powerUpActive = false;
+  }
+}
+void activatePowerUp(){
+  powerUpReady = false;
+  powerUpActive = true;
+  powerUpStartTime = millis();
+}
+void registerCorrectHit(){
+  if(powerUpReady || powerUpActive){
+    return;
+  }
+  streakCount++;
+  if(streakCount >= POWER_UP_STREAK_TARGET){
+    streakCount = 0;
+    powerUpReady = true;
+  }
+}
+void resetStreak(){
+  streakCount = 0;
+}
+int pointsForHit(){
+  return POINTS_PER_HIT * (powerUpActive ? POWER_UP_MULTIPLIER : 1);
 }
 
 // ---------------- MOVE BLOCKS ----------------
@@ -277,23 +387,30 @@ void checkButtons(){
 
     if(lastState[c] == HIGH && current == LOW){
 
-      if(blockGrid[bottomRow][c] == 1){
-        score += 10;
-        correctHits++;
-        totalBlocks++;           // counts as a block that was handled
+      score += pointsForHit();
         blockGrid[bottomRow][c] = 0;
+        registerCorrectHit();
+        servoAngle += 20;
+        servoAngle = constrain(servoAngle, 0, 180);
+        myServo.write(servoAngle);
+        servoAngle -= 40;
+        servoAngle = constrain(servoAngle, 0, 180);
+        myServo.write(servoAngle);
+        servoAngle += 20;
+        servoAngle = constrain(servoAngle, 0, 180);
+        myServo.write(servoAngle);
+      } else {
+        score -= POINTS_PER_HIT;
+        if(score < 0) score = 0;
+        resetStreak();
       }
-      else{
-
-        score -= 10;
-
-      }
+      
       showScore();
     }
 
     lastState[c] = current;
-  }
 }
+
 
 // ---------------- LCD ---------------- OBSOLETE FOR NOW
 /**void updateLCD(){
