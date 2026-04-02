@@ -17,6 +17,7 @@
 
 CRGB leds[NUM_LEDS];
 
+// --------I2C---------
 const byte AUDIO_ADDR = 0x08;
 
 // -------------------- TM1637 (4-pin) score display --------------------
