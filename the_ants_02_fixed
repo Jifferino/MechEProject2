@@ -388,7 +388,7 @@ void drawBlocks(){
   if(powerUpReady){
     uint8_t pulse = (millis() / 4) % 255;
     for(int i = 0; i < NUM_LEDS; i++){
-      leds[i] = CRGB(pulse / 4, pulse / 8, 0); // faint amber glow
+      leds[i] = CRGB(pulse / 2, pulse / 4, 0); // faint amber glow
     }
   }
 
