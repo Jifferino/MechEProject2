@@ -233,6 +233,7 @@ void checkPowerUpButton(){
 // ---------------- SETUP ----------------
 void setup(){
   Wire.begin();
+  Serial.begin(9600);
   // TM1637
   scoreDisplay.setBrightness(7);
   showScore();
