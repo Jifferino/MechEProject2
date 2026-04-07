@@ -1,0 +1,601 @@
+// ============================================================
+//  Arduino Song Player
+//  Song:    Harder, Better, Faster, Stronger - Daft Punk
+//  Key:     F# Minor
+//  BPM:     107
+//  Speaker: Gikfun EK2173 (4 Ohm, 20W) on Pin 8
+//
+//  ⚠️  IMPORTANT HARDWARE NOTE:
+//  This speaker is rated for 20W but Arduino GPIO pins can
+//  only safely supply ~40mA. The speaker WILL work at low
+//  volume, but for proper volume use a PAM8403 or similar
+//  amplifier module between Pin 8 and the speaker.
+//
+//  WIRING (direct, no amp):
+//    Speaker + → Pin 8
+//    Speaker - → GND
+//
+//  WIRING (with PAM8403 amp - recommended):
+//    Arduino Pin 8 → PAM8403 input
+//    PAM8403 output → Speaker
+//    PAM8403 VCC → Arduino 5V
+//    PAM8403 GND → Arduino GND
+// ============================================================
+#include <Wire.h>
+
+const byte MY_ADDR = 0x08;
+
+volatile bool restartMusic = false;
+
+void receiveEvent(int howMany) {
+  while (Wire.available()) {
+    char c = Wire.read();
+    if (c == 'R') {
+      restartMusic = true;
+    }
+  }
+}
+
+#define SPEAKER_PIN 8
+#define SPEAKER_PIN2 12
+
+// --- Note Frequency Definitions (Hz) ---
+#define NOTE_A2 110
+#define NOTE_BF2 116.541
+#define NOTE_B2 123.471
+#define NOTE_C3 130.813
+#define NOTE_DF3 138.591
+#define NOTE_D3 146.832
+#define NOTE_EF3 155.563
+#define NOTE_E3 164.814
+#define NOTE_F3 174.614
+#define NOTE_FS3 185
+#define NOTE_G3 195.998
+#define NOTE_GS3 208
+#define NOTE_A3  220
+#define NOTE_BF3 233
+#define NOTE_B3  247
+#define NOTE_C4 261.6
+#define NOTE_CS4 277
+#define NOTE_D4  294
+#define NOTE_EF4 311.127
+#define NOTE_E4  330
+#define NOTE_F4 349.23
+#define NOTE_FS4 370
+#define NOTE_G4 392
+#define NOTE_GS4 415
+#define NOTE_A4  440
+#define NOTE_BF4 466
+#define NOTE_B4  494
+#define NOTE_C5 523.251
+#define NOTE_CS5 554
+#define NOTE_D5  587
+#define NOTE_EF5 622.254
+#define NOTE_E5  659
+#define NOTE_F5 698.5
+#define NOTE_FS5 740
+#define NOTE_G5 784
+#define NOTE_GS5 831
+#define NOTE_A5  880
+#define NOTE_BF5 932
+#define NOTE_B5  987
+#define NOTE_C6 1046.5
+#define NOTE_D6 1174.66
+#define NOTE_EF6 1244.51
+#define NOTE_F6 1396.91
+#define NOTE_G6 1567.98
+#define NOTE_A6 1760.00
+#define NOTE_BF6 1864.66
+#define NOTE_B6 1975.53
+#define R     0
+
+// ============================================================
+//  Tempo
+// ============================================================
+const int BPM = 125;
+const int WHOLE_NOTE_MS = (60000 / BPM) * 4;
+
+// ============================================================
+//  🎵 Harder, Better, Faster, Stronger 
+//
+//
+//  Duration guide:
+//    1  = whole, 2 = half, 4 = quarter, 8 = eighth, 16 = sixteenth
+//   -4  = dotted quarter (1.5x), -8 = dotted eighth
+// ============================================================
+
+const int melody[][2] = {
+
+  // Melody, speaker1
+
+  { R,  8 },
+  { R,  8 },
+  { NOTE_BF4,   8 },
+  { NOTE_G4,  8 },
+  { NOTE_D5,   8 },
+  { NOTE_C5, 8 },
+  { NOTE_BF4, 8},
+  { NOTE_G4, 8 },
+
+  { R,  8 },
+  { R,  8 },
+  { NOTE_BF4,   8 },
+  { NOTE_F4,  8 },
+  { NOTE_C5,   8 },
+  { NOTE_BF4, 8 },
+  { NOTE_A4, 8},
+  { NOTE_BF4, 8 },
+
+  { R,  8 },
+  { R,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_E5,  8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5, 8 },
+  { NOTE_G5, 8},
+  { NOTE_E5, 8 },
+  
+  { NOTE_EF5,   8 },
+  { NOTE_EF5,  8},
+  { NOTE_EF4, 8 },
+  { NOTE_EF4, 8},
+  { NOTE_EF3, 8},
+  { NOTE_EF3, 8},
+  { NOTE_D3, 8},
+  { NOTE_D3, 8},
+
+
+  { R,         8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_D5,   8 },
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+
+  { R,         8 },
+  { NOTE_F4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_F4,   8 },
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_A4,   8 },
+  { NOTE_BF4,  8 },
+
+  { R,         8 },
+  { NOTE_E3,   8 },
+  { NOTE_G3,   8 },
+  { NOTE_E3,   8 },
+  { NOTE_C4,   8 },
+  { NOTE_BF3,  8 },
+  { NOTE_G3,   8 },
+  { NOTE_E3,   8 },
+
+  { NOTE_E3,   8 },
+  { NOTE_G3,   8 },
+  { NOTE_BF3,  8 },
+  { NOTE_G3,   8 },
+  { NOTE_BF3,  8 },
+  { NOTE_G3,   8 },
+  { NOTE_BF3,  8 },
+  { NOTE_G3,   8 },
+
+  { R,         8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_D5,   8 },
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+
+  { R,         8 },
+  { NOTE_F4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_F4,   8 },
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_A4,   8 },
+  { NOTE_BF4,  8 },
+
+  { R,         8 },
+  { NOTE_E5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_E5,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+
+  { NOTE_E5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+
+  { NOTE_F4,   8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_D5,   8 },
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+
+  { NOTE_F4,   8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+
+  { NOTE_E4,   8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+
+  { NOTE_E4,   8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+
+  { NOTE_F5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_D6,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+
+  { NOTE_F5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+
+  { NOTE_E5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+
+  { NOTE_E5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+
+  { NOTE_D6,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_F5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_EF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_D6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  
+  { NOTE_F4,   8 },
+  { NOTE_F5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_F5,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_A5,   8 },
+  { NOTE_BF5,  8 },
+
+  { NOTE_A6,   8 },
+  { NOTE_A6,   8 },
+  { NOTE_F6,   8 },
+  { NOTE_F6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_G5,   8 },
+
+  { NOTE_A6,   8 },
+  { NOTE_A6,   8 },
+  { NOTE_F6,   8 },
+  { NOTE_F6,   8 },
+  { NOTE_A6,   8 },
+  { NOTE_A6,   8 },
+  { NOTE_F6,   8 },
+  { NOTE_F6,   8 },
+
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_D5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+
+  { NOTE_F4,   8 },
+  { NOTE_F5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_F5,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_A5,   8 },
+  { NOTE_BF5,  8 },
+
+  { NOTE_E4,   8 },
+  { NOTE_E5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_E5,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_E5,   8 },
+
+  { NOTE_E5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+
+  { NOTE_D6,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_F5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_E4,   8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+
+  { NOTE_F4,   8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_D5,   8 },
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+
+  { NOTE_F4,   8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_A4,   8 },
+  { NOTE_BF4,  8 },
+
+  { NOTE_E4,   8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+
+  { NOTE_E4,   8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+
+  { NOTE_F5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_D6,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+
+  { NOTE_F5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_A5,   8 },
+  { NOTE_BF5,  8 },
+
+  { NOTE_E5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+
+  { NOTE_E5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+
+  { NOTE_D6,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { R,         8 },
+  { R,         8 },
+  { R,         8 },
+  { R,         8 },
+
+  { NOTE_F5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { R,         8 },
+  { R,         8 },
+  { R,         8 },
+  { R,         8 },
+
+  { NOTE_D5,   8 },
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { R,         8 },
+  { R,         8 },
+  { R,         8 },
+  { R,         8 },
+
+  { NOTE_BF4,  8 },
+  { NOTE_BF4,  8 },
+  { NOTE_C5,   8 },
+  { NOTE_C5,   8 },
+  { NOTE_G4,   8 },
+  { NOTE_G4,   8 },
+  { NOTE_G4,   8 },
+  { NOTE_G4,   8 },
+
+  { NOTE_D6,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_D5,   8 },
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+
+  { NOTE_F5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+  { NOTE_F4,   8 },
+  { NOTE_G4,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+
+  { NOTE_D5,   8 },
+  { NOTE_C5,   8 },
+  { NOTE_BF4,  8 },
+  { NOTE_G4,   8 },
+  { NOTE_D6,   8 },
+  { NOTE_C6,   8 },
+  { NOTE_BF5,  8 },
+  { NOTE_G5,   8 },
+
+  { NOTE_G5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_G5,   8 },
+  { NOTE_G5,   8 },
+  { R,         8 },
+  { R,         8 },
+  { R,         8 },
+  { R,         8 },
+
+
+
+
+  
+};
+const int NOTE_COUNT = sizeof(melody) / sizeof(melody[0]);
+
+// ============================================================
+//  Playback engine
+// ============================================================
+void playSong() {
+  for (int i = 0; i < NOTE_COUNT; i++) {
+
+    // 🔁 Check for restart signal at the start of each note
+    if (restartMusic) {
+      noTone(SPEAKER_PIN);
+      return;   // Exit early — loop() will re-call playSong()
+    }
+
+    int note    = melody[i][0];
+    int divider = melody[i][1];
+
+    int noteDuration;
+    if (divider > 0) {
+      noteDuration = WHOLE_NOTE_MS / divider;
+    } else {
+      noteDuration = (WHOLE_NOTE_MS / abs(divider)) * 1.5;
+    }
+
+    if (note == R) {
+      noTone(SPEAKER_PIN);
+    } else {
+      tone(SPEAKER_PIN, note, noteDuration * 0.9);
+    }
+
+    delay(noteDuration);
+    noTone(SPEAKER_PIN);
+  }
+}
+
+void setup() {
+  Wire.begin(MY_ADDR);
+  Wire.onReceive(receiveEvent);
+
+  pinMode(SPEAKER_PIN, OUTPUT);
+}
+
+void loop() {
+  if (restartMusic) {
+    noTone(SPEAKER_PIN);
+
+    noInterrupts();
+    restartMusic = false;
+    interrupts();
+
+    playSong();
+  }
+}
