@@ -3,6 +3,7 @@
 #include <TM1637Display.h>
 #include <Wire.h>
 #include <Servo.h>
+#include <CapacitiveSensor.h>
 
 //SONG CHOSEN: DAFT PUNK HARDER BETTER FASTER STRONGER
 // ---------------- LED MATRIX ----------------
@@ -27,9 +28,14 @@ TM1637Display scoreDisplay(TM_CLK, TM_DIO);
 
 // ---------------- BUTTONS ----------------
 // Blue, Red, Green, Yellow
+
+//Power up Button will be a CTS
+CapacitiveSensor powerUpSensor(9, A3);
+
+const long TOUCH_THRESHOLD = 100; //sensitivity
 const int buttonPins[4] = {3,4,5,6};
 const int startButtonPin = 2;
-const int powerUpButtonPin = A3;
+//const int powerUpButtonPin = A3;
 
 // ---------------- GAME ----------------
 int blockGrid[BLOCK_ROWS][BLOCK_COLS];
@@ -416,15 +422,19 @@ bool checkStartButton(){
   return wasPressed;
 }
 
-void checkPowerUpButton(){
-  static bool lastState = HIGH;
-  bool current = digitalRead(powerUpButtonPin);
+void checkPowerUpTouch(){
+  static bool lastState = false;
+  long sensorValue = powerUpSensor.capacitiveSensor(30);
 
-  if(lastState == HIGH && current == LOW && powerUpReady && !powerUpActive){
-    activatePowerUp();
+  bool isTouched = (sensorValue > TOUCH_THRESHOLD);
+
+  if(isTouched && !lastState){
+    if(powerUpReady && !powerUpActive){
+      activatePowerUp();
+    }
   }
 
-  lastState = current;
+  lastState = isTouched;
 }
 
 // ---------------- SETUP ----------------
@@ -464,7 +474,7 @@ void loop(){
     return;
   }
 
-  checkPowerUpButton();
+  checkPowerUpTouch();
   updatePowerUpState();
 
   if(!gameStarted){
