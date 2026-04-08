@@ -46,7 +46,7 @@ int streakCount = 0;
 int totalBlocks = 0;
 
 unsigned long lastMoveTime = 0;
-int moveDelay = 488;
+int moveDelay = 300;//488;
 
 bool gameStarted = false;
 
