@@ -102,7 +102,7 @@ void drawSquare(int startX, int startY, CRGB color){
 // ---------------- SONG CHART ----------------
 // Lanes: 0=Blue, 1=Red, 2=Green, 3=Yellow
 
-const int songLength = 64;
+const int songLength = 208;
 
 const byte songMap[songLength][4] = {
   //52 total measures
@@ -457,7 +457,7 @@ void setup(){
   myServo.write(servoAngle);
 
   pinMode(startButtonPin, INPUT_PULLUP);
-  pinMode(powerUpButtonPin, INPUT_PULLUP);
+  //  pinMode(powerUpButtonPin, INPUT_PULLUP);
 }
 
 // ---------------- LOOP ----------------
