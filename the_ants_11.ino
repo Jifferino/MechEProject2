@@ -361,6 +361,13 @@ void spawnBlocks() {
     blockGrid[0][c] = pgm_read_byte(&songMap[beatIndex][c]);
 
   beatIndex++;
+
+  if (++playCount >= 2) {
+  playCount   = 0;
+  gameStarted = false;
+  showWinScreen();  // ← add this
+  return;
+}
 }
 
 // ---------------- DRAW BLOCKS ----------------
@@ -414,5 +421,19 @@ void checkButtons() {
     }
 
     lastState[c] = current;
+  }
+}
+
+void showWinScreen() {
+  uint16_t color;
+  unsigned long start = millis();
+  while (millis() - start < 5000) {
+    uint8_t pulse = (millis() / 4) % 255;
+    if (score > 2000)
+      color = toRGB565(0, pulse, 0);    // pulsing green = win
+    else
+      color = toRGB565(pulse, 0, 0);    // pulsing red = lose
+    for (int i = 0; i < TOTAL_LEDS; i++) ledbuf[i] = color;
+    pushLEDs();
   }
 }
