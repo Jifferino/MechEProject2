@@ -36,7 +36,11 @@
 
 // ---------------- LED BUFFER ----------------
 uint16_t ledbuf[TOTAL_LEDS];
-CRGB     fastLEDpix[1];
+// At the top of the file, replace:
+CRGB fastLEDpix[1];
+
+// With:
+static CRGB scratch[NUM_LEDS_PER_PANEL];  // shared between setup() and pushLEDs()
 
 // ---------------- HARDWARE ----------------
 TM1637Display    scoreDisplay(A0, A1);
@@ -82,12 +86,12 @@ inline CRGB fromRGB565(uint16_t c) {
 }
 
 void pushLEDs() {
-  static CRGB scratch[NUM_LEDS_PER_PANEL];
-
+  // Top panel
   for (int i = 0; i < NUM_LEDS_PER_PANEL; i++)
     scratch[i] = fromRGB565(ledbuf[i]);
   FastLED[0].showLeds(FastLED.getBrightness());
 
+  // Bottom panel — reuse scratch
   for (int i = 0; i < NUM_LEDS_PER_PANEL; i++)
     scratch[i] = fromRGB565(ledbuf[NUM_LEDS_PER_PANEL + i]);
   FastLED[1].showLeds(FastLED.getBrightness());
@@ -225,8 +229,8 @@ void setup() {
   scoreDisplay.setBrightness(7);
   showScore();
 
-  FastLED.addLeds<WS2812B, DATA_PIN_TOP,    GRB>(fastLEDpix, 1);
-  FastLED.addLeds<WS2812B, DATA_PIN_BOTTOM, GRB>(fastLEDpix, 1);
+  FastLED.addLeds<WS2812B, DATA_PIN_TOP,    GRB>(scratch, NUM_LEDS_PER_PANEL);
+  FastLED.addLeds<WS2812B, DATA_PIN_BOTTOM, GRB>(scratch, NUM_LEDS_PER_PANEL);
   FastLED.setBrightness(10);
 
   randomSeed(analogRead(A2));
