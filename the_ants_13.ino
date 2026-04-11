@@ -436,7 +436,7 @@ void showWinScreen() {
   unsigned long start = millis();
 
   Wire.beginTransmission(AUDIO_ADDR); //I2C Transmission
-  if (score > 2000)
+  if (score > 1500)
     Wire.write('W');   // happy tune
   else
     Wire.write('L');   // sad tune
@@ -446,7 +446,7 @@ void showWinScreen() {
 
   while (millis() - start < 5000) {
     uint8_t pulse = (millis() / 4) % 255;
-    if (score > 2000) {
+    if (score > 1500) {
       servoAngle = constrain(servoAngle + 20, 0, 180);
       myServo.write(servoAngle);
       delay(300);
