@@ -21,7 +21,7 @@
 #define POWER_UP_STREAK_TARGET 8
 #define POWER_UP_MULTIPLIER    2
 #define POWER_UP_DURATION_MS   15000UL
-#define MOVE_DELAY             300
+#define MOVE_DELAY             488
 #define TOUCH_THRESHOLD        100
 #define AUDIO_ADDR             0x08
 
