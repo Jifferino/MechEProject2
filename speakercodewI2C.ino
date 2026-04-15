@@ -1,4 +1,4 @@
-// ============================================================
+// ===========================================================
 //  Arduino Song Player
 //  Song:    Harder, Better, Faster, Stronger - Daft Punk
 //  Key:     F# Minor
@@ -26,13 +26,15 @@
 const byte MY_ADDR = 0x08;
 
 volatile bool restartMusic = false;
+volatile bool playWin      = false;   
+volatile bool playLose     = false;   
 
 void receiveEvent(int howMany) {
   while (Wire.available()) {
     char c = Wire.read();
-    if (c == 'R') {
-      restartMusic = true;
-    }
+    if (c == 'R') restartMusic = true;
+    else if (c == 'W') playWin      = true;   
+    else if (c == 'L') playLose     = true;   
   }
 }
 
@@ -92,7 +94,7 @@ void receiveEvent(int howMany) {
 // ============================================================
 //  Tempo
 // ============================================================
-const int BPM = 125;
+const int BPM = 100;
 const int WHOLE_NOTE_MS = (60000 / BPM) * 4;
 
 // ============================================================
@@ -502,8 +504,6 @@ const int melody[][2] = {
   { NOTE_C5,   8 },
   { NOTE_G4,   8 },
   { NOTE_G4,   8 },
-  { NOTE_G4,   8 },
-  { NOTE_G4,   8 },
 
   { NOTE_D6,   8 },
   { NOTE_C6,   8 },
@@ -539,9 +539,7 @@ const int melody[][2] = {
   { R,         8 },
   { R,         8 },
   { R,         8 },
-  { R,         8 },
-
-
+  { R,         8 }
 
 
   
@@ -588,6 +586,30 @@ void setup() {
   pinMode(SPEAKER_PIN, OUTPUT);
 }
 
+void playWinTune() {
+  int notes[] = { NOTE_C4, NOTE_E4, NOTE_G4, NOTE_C5, NOTE_E5, NOTE_G5, NOTE_C6 };
+  int durations[] = { 8, 8, 8, 8, 8, 8, 4 };
+  int count = 7;
+  for (int i = 0; i < count; i++) {
+    int dur = WHOLE_NOTE_MS / durations[i];
+    tone(SPEAKER_PIN, notes[i], dur * 0.9);
+    delay(dur);
+    noTone(SPEAKER_PIN);
+  }
+}
+
+void playLoseTune() {
+  int notes[] = { NOTE_G4, NOTE_F4, NOTE_EF4, NOTE_D4, NOTE_C4 };
+  int durations[] = { 4, 4, 4, 4, 2 };
+  int count = 5;
+  for (int i = 0; i < count; i++) {
+    int dur = WHOLE_NOTE_MS / durations[i];
+    tone(SPEAKER_PIN, notes[i], dur * 0.9);
+    delay(dur);
+    noTone(SPEAKER_PIN);
+  }
+}
+
 void loop() {
   if (restartMusic) {
     noTone(SPEAKER_PIN);
@@ -597,5 +619,21 @@ void loop() {
     interrupts();
 
     playSong();
+  }
+
+  if (playWin) {
+    noTone(SPEAKER_PIN);
+    noInterrupts();
+    playWin = false;
+    interrupts();
+    playWinTune();
+  }
+
+  if (playLose) {
+    noTone(SPEAKER_PIN);
+    noInterrupts();
+    playLose = false;
+    interrupts();
+    playLoseTune();
   }
 }
